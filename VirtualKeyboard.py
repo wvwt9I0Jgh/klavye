@@ -17,7 +17,8 @@ def drawAll(img, buttonList):
     imgNew = np.zeros_like(img, np.uint8)
     for button in buttonList:
         x, y = button.pos
-        cv2.rectangle(imgNew, button.pos, (x + button.size[0], y + button.size[1]), (255, 0, 255), cv2.FILLED)
+        # Bordo renk (128, 0, 64)
+        cv2.rectangle(imgNew, button.pos, (x + button.size[0], y + button.size[1]), (128, 0, 64), cv2.FILLED)
         cv2.putText(imgNew, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 3)
     out = img.copy()
     alpha = 0.5
@@ -41,8 +42,21 @@ keyboard = Controller()
 # Sanal klavye tuş düzeni
 keys = [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
         ["A", "S", "D", "F", "G", "H", "J", "K", "L", ";"],
-        ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"]]
-buttonList = [Button([100 + 100 * j, 100 + 100 * i], key) for i in range(len(keys)) for j, key in enumerate(keys[i])]
+        ["Z", "X", "C", "V", "B", "N", "M", ",", ".", "/"],
+        ["SPACE", "BACKSPACE"]]  # Yeni satır: Space ve Backspace tuşları
+
+# Buton listesini oluştur
+buttonList = []
+for i in range(len(keys) - 1):  # İlk 3 satır için
+    for j, key in enumerate(keys[i]):
+        buttonList.append(Button([100 + 100 * j, 100 + 100 * i], key))
+
+# Özel butonlar için
+# Space butonu (daha geniş)
+buttonList.append(Button([100, 100 + 100 * 3], "SPACE", size=[300, 80]))
+# Backspace butonu (daha geniş)
+buttonList.append(Button([500, 100 + 100 * 3], "BACKSPACE", size=[300, 80]))
+
 finalText = ""
 
 # Her buton için son tıklama zamanını tutacak bir sözlük
@@ -79,11 +93,18 @@ while True:
                         fingers = detector.fingersUp(hand)
                         if fingers == [0, 1, 0, 0, 0]:  # Sadece işaret parmağı yukarıda
                             currentTime = time()
-                            if currentTime - lastClickTime[button.text] > 0.5:  # 0.5 saniye bekleme
-                                keyboard.press(button.text)
+                            if currentTime - lastClickTime[button.text] > 0.50:  # 0.50 saniye bekleme (değiştirildi)
+                                # Özel tuşlar için işlemler
+                                if button.text == "SPACE":
+                                    finalText += " "  # Boşluk ekle
+                                elif button.text == "BACKSPACE" and len(finalText) > 0:
+                                    finalText = finalText[:-1]  # Son karakteri sil
+                                else:
+                                    keyboard.press(button.text)
+                                    finalText += button.text
+                                
                                 cv2.rectangle(img, button.pos, (x + w, y + h), (0, 0, 255), cv2.FILLED)
                                 cv2.putText(img, button.text, (x + 20, y + 65), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), 3)
-                                finalText += button.text
                                 lastClickTime[button.text] = currentTime  # Son tıklama zamanını güncelle
 
     # Label renkleri ve label 
@@ -96,4 +117,5 @@ while True:
         break
 
 cap.release()
+cv2.destroyAllWindows()
 cv2.destroyAllWindows()
